@@ -38,7 +38,7 @@ if (! empty($_POST['unsahre'])) {
 }
 if (! empty($_GET['stream_download'])) {
     $info = json_decode(base64_decode($_GET['stream_download']), true);
-    $tinyUpload->streamDownload($info['token'], $info['file_name']);
+    $tinyUpload->streamDownload($info['is_share'], $info['token'], $info['file_name']);
     exit;
 }
 if (! empty($_FILES['file']['tmp_name'])) {

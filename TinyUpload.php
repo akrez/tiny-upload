@@ -208,9 +208,9 @@ class TinyUpload
         return $path;
     }
 
-    public function streamDownload($token, $fileName)
+    public function streamDownload($isShare, $token, $fileName)
     {
-        $path = $this->path(false, $token, $fileName);
+        $path = $this->path($isShare, $token, $fileName);
         ob_clean();
         ob_end_flush();
         header('Content-Type: application/octet-stream');
