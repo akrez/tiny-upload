@@ -125,7 +125,13 @@ if (! empty($_FILES['file']['tmp_name'])) {
                         <tbody>
                         <?php foreach ($tinyUpload->list() as $tokenName => $tokens) { ?>
                              <tr class="table-secondary ">
-                                <td><?php if(empty($tokenName)){ echo '🟢 Share'; }elseif($tokenName === $tinyUpload->getToken()){ echo '🟡 Yours';} else {echo '🟠 Others';} ?></td>
+                                <td><?php if (empty($tokenName)) {
+                                    echo '🟢 Share';
+                                } elseif ($tokenName === $tinyUpload->getToken()) {
+                                    echo '🟡 Yours';
+                                } else {
+                                    echo '🟠 Others';
+                                } ?></td>
                                 <td colspan="99"><?= $tokenName ?></td>
                             </tr>
                         <?php foreach ($tokens as $file) { ?>

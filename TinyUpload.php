@@ -3,6 +3,7 @@
 class TinyUpload
 {
     const SHARE = 'share';
+
     const UNSHARE = 'unshare';
 
     protected string $basePath;
@@ -22,15 +23,15 @@ class TinyUpload
         //
         $parts[] = ($isShare ? static::SHARE : static::UNSHARE);
         //
-        if(! $isShare) {
-            if($token !== null) {
+        if (! $isShare) {
+            if ($token !== null) {
                 $parts[] = $token;
             }
         }
-        if($fileName !== null) {
+        if ($fileName !== null) {
             $parts[] = $fileName;
         }
-        //
+
         return implode(DIRECTORY_SEPARATOR, $parts);
     }
 
@@ -87,9 +88,9 @@ class TinyUpload
     {
         $bytes = filesize($rawPath);
         $i = floor(log($bytes) / log(1024));
-        $sizes = array('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
+        $sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
-        return sprintf('%.02F', $bytes / pow(1024, $i)) * 1 . ' ' . $sizes[$i];
+        return sprintf('%.02F', $bytes / pow(1024, $i)) * 1 .' '.$sizes[$i];
     }
 
     public function listFiles($isShare, $token)
@@ -147,7 +148,7 @@ class TinyUpload
         }
 
         try {
-            $fileName = basename($tmpFile['name']);
+            $fileName = $this->normalizeFilename($tmpFile['name']);
             $path = $this->differenceFileName(false, $token, $fileName);
             if (move_uploaded_file($tmpFile['tmp_name'], $path)) {
                 return 200;
@@ -180,9 +181,10 @@ class TinyUpload
             ]);
             $response = curl_exec($curl);
             if ($response) {
-                $fileName = basename(parse_url($url, PHP_URL_PATH));
+                $fileName = $this->normalizeFilename($url);
                 $path = $this->differenceFileName(false, $token, $fileName);
                 file_put_contents($path, $response);
+
                 return 200;
             }
         } catch (\Throwable $th) {
@@ -211,10 +213,16 @@ class TinyUpload
     public function streamDownload($isShare, $token, $fileName)
     {
         $path = $this->path($isShare, $token, $fileName);
+
         ob_clean();
         ob_end_flush();
+
+        $headerName = addcslashes($fileName, '"\\');
+        $encoded = rawurlencode($fileName);
+
         header('Content-Type: application/octet-stream');
-        header('Content-disposition: attachment; filename="'.$fileName.'"');
+        header("Content-disposition: attachment; filename=\"{$headerName}\"; filename*=UTF-8''{$encoded}");
+
         readfile($path);
     }
 
@@ -248,6 +256,10 @@ class TinyUpload
 
     public function canShare($token, $fileName)
     {
+        if (empty($token)) {
+            return false;
+        }
+
         $isAllowed = ($this->isAdmin() || ($this->getToken() === $token));
         if (! $isAllowed) {
             return false;
@@ -268,7 +280,7 @@ class TinyUpload
         }
 
         if (rename(
-            $this->path(false,  $token, $fileName),
+            $this->path(false, $token, $fileName),
             $this->differenceFileName(true, null, $fileName)
         )) {
             return 200;
@@ -279,6 +291,10 @@ class TinyUpload
 
     public function canUnshare($token, $fileName)
     {
+        if (! empty($token)) {
+            return false;
+        }
+
         $isAllowed = ($this->isAdmin());
         if (! $isAllowed) {
             return false;
@@ -299,12 +315,24 @@ class TinyUpload
         }
 
         if (rename(
-            $this->path(true,  null, $fileName),
+            $this->path(true, null, $fileName),
             $this->differenceFileName(false, $this->getToken(), $fileName)
         )) {
             return 200;
         }
 
         return 500;
+    }
+
+    private function normalizeFilename(string $filename)
+    {
+        $filename = basename($filename);
+        $filename = preg_replace('/[<>:"\/\\\\|?*\x00-\x1F]/', '_', $filename);
+        $filename = rtrim($filename, '. ');
+        if ($filename === '' || $filename === '.' || $filename === '..') {
+            $filename = 'download';
+        }
+
+        return $filename;
     }
 }
