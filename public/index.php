@@ -50,14 +50,12 @@ if (! empty($_FILES['file']['tmp_name'])) {
 <html lang="en">
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
-    <meta name="generator" content="Hugo 0.84.0">
-    <title>Yeap!</title>
-    <!-- Bootstrap core CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <title>Akrez Tiny Upload</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="./favicon.ico">
+    <link href="./assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
 <body class="container text-center">
@@ -127,7 +125,7 @@ if (! empty($_FILES['file']['tmp_name'])) {
                         <tbody>
                         <?php foreach ($tinyUpload->list() as $tokenName => $tokens) { ?>
                              <tr class="table-secondary ">
-                                <td><?php if(empty($tokenName)){ echo '🟢 Share'; }elseif($tokenName === $tinyUpload->getToken()){ echo '🔵 Yours';} else {echo 'others';} ?></td>
+                                <td><?php if(empty($tokenName)){ echo '🟢 Share'; }elseif($tokenName === $tinyUpload->getToken()){ echo '🟡 Yours';} else {echo '🟠 Others';} ?></td>
                                 <td colspan="99"><?= $tokenName ?></td>
                             </tr>
                         <?php foreach ($tokens as $file) { ?>
