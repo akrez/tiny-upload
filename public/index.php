@@ -1,7 +1,10 @@
 <?php
+
+set_time_limit(0);
+
 include '../TinyUpload.php';
 
-$tinyUpload = new TinyUpload('asd', 'public');
+$tinyUpload = new TinyUpload('asd');
 if (! empty($_POST['signin'])) {
     $tinyUpload->signin($_POST['signin']);
     header('Refresh:0');
@@ -10,8 +13,8 @@ if (! empty($_POST['signout'])) {
     $tinyUpload->signout();
     header('Refresh:0');
 }
-if (! empty($_POST['url'])) {
-    $tinyUpload->uploadUrl($_POST['url']);
+if (! empty($_POST['upload_url'])) {
+    $tinyUpload->uploadUrl($_POST['upload_url']);
     header('Refresh:0');
 }
 if (! empty($_POST['signup'])) {
@@ -19,23 +22,23 @@ if (! empty($_POST['signup'])) {
     header('Refresh:0');
 }
 if (! empty($_POST['delete_file'])) {
-    $tokenAndFileName = json_decode(base64_decode($_POST['delete_file']), true);
-    $tinyUpload->delete($tokenAndFileName['token'], $tokenAndFileName['file_name']);
+    $info = json_decode(base64_decode($_POST['delete_file']), true);
+    $tinyUpload->delete($info['is_share'], $info['token'], $info['file_name']);
     header('Refresh:0');
 }
-if (! empty($_POST['move_to_public'])) {
-    $tokenAndFileName = json_decode(base64_decode($_POST['move_to_public']), true);
-    $tinyUpload->moveTo($tokenAndFileName['token'], $tokenAndFileName['file_name']);
+if (! empty($_POST['share'])) {
+    $info = json_decode(base64_decode($_POST['share']), true);
+    $tinyUpload->share($info['token'], $info['file_name']);
     header('Refresh:0');
 }
-if (! empty($_POST['move_from_public'])) {
-    $tokenAndFileName = json_decode(base64_decode($_POST['move_from_public']), true);
-    $tinyUpload->moveFrom($tokenAndFileName['token'], $tokenAndFileName['file_name']);
+if (! empty($_POST['unsahre'])) {
+    $info = json_decode(base64_decode($_POST['unsahre']), true);
+    $tinyUpload->unshare($info['token'], $info['file_name']);
     header('Refresh:0');
 }
 if (! empty($_GET['stream_download'])) {
-    $tokenAndFileName = json_decode(base64_decode($_GET['stream_download']), true);
-    $tinyUpload->streamDownload($tokenAndFileName['token'], $tokenAndFileName['file_name']);
+    $info = json_decode(base64_decode($_GET['stream_download']), true);
+    $tinyUpload->streamDownload($info['token'], $info['file_name']);
     exit;
 }
 if (! empty($_FILES['file']['tmp_name'])) {
@@ -86,7 +89,7 @@ if (! empty($_FILES['file']['tmp_name'])) {
                         <form method="POST">
                             <div class="input-group">
                                 <span class="input-group-text">Url</span>
-                                <input type="text" class="form-control" name="url">
+                                <input type="text" class="form-control" name="upload_url">
                                 <button class="btn btn-primary" type="submit">Upload</button>
                             </div>
                         </form>
@@ -120,54 +123,43 @@ if (! empty($_FILES['file']['tmp_name'])) {
 
             <div class="row mt-3">
                 <div class="col-12">
-                    <table class="table table-bordered table-sm align-middle">
+                    <table class="table table-bordered table-sm align-middle font-monospace">
                         <tbody>
                         <?php foreach ($tinyUpload->list() as $tokenName => $tokens) { ?>
-                            <tr class="table-secondary">
-                                <td class="font-monospace" colspan="99"><?= $tokenName ?></td>
+                             <tr class="table-secondary ">
+                                <td><?php if(empty($tokenName)){ echo '🟢 Share'; }elseif($tokenName === $tinyUpload->getToken()){ echo '🔵 Yours';} else {echo 'others';} ?></td>
+                                <td colspan="99"><?= $tokenName ?></td>
                             </tr>
-                            <?php foreach ($tokens as $file) { ?>
-                                    <tr class="">
-                                        <td class="font-monospace">
-                                            <a href="./?stream_download=<?= base64_encode(json_encode([
-                                                'token' => $tokenName,
-                                                'file_name' => $file['file_name'],
-                                            ])) ?>"><?= $file['file_name'] ?></a>
-                                        </td>
-                                        <td class="font-monospace"><?= $file['date'] ?></td>
-                                        <td class="font-monospace"><?= $file['size'] ?></td>
-                                        <td class="font-monospace">
-                                            <?php if ($tinyUpload->canDelete($tokenName, $file['file_name'])) { ?>
-                                                <form method="POST">
-                                                    <input type="hidden" name="delete_file" value="<?= base64_encode(json_encode([
-                                                        'token' => $tokenName,
-                                                        'file_name' => $file['file_name'],
-                                                    ])) ?>">
-                                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                                                </form>
-                                            <?php } ?>
-                                        </td>
-                                        <td class="font-monospace">
-                                            <?php if ($tinyUpload->canMoveTo($tokenName, $file['file_name'])) { ?>
-                                                <form method="POST">
-                                                    <input type="hidden" name="move_to_public" value="<?= base64_encode(json_encode([
-                                                        'token' => $tokenName,
-                                                        'file_name' => $file['file_name'],
-                                                    ])) ?>">
-                                                    <button type="submit" class="btn btn-sm btn-danger">Move To Public</button>
-                                                </form>
-                                            <?php } ?>
-                                            <?php if ($tinyUpload->canMoveFrom($tokenName, $file['file_name'])) { ?>
-                                                <form method="POST">
-                                                    <input type="hidden" name="move_from_public" value="<?= base64_encode(json_encode([
-                                                        'token' => $tokenName,
-                                                        'file_name' => $file['file_name'],
-                                                    ])) ?>">
-                                                    <button type="submit" class="btn btn-sm btn-danger">Move From Public</button>
-                                                </form>
-                                            <?php } ?>
-                                        </td>
-                                    </tr>
+                        <?php foreach ($tokens as $file) { ?>
+                            <tr>
+                                <td>
+                                    <a href="./?stream_download=<?= base64_encode(json_encode($file)) ?>"><?= $file['file_name'] ?></a>
+                                </td>
+                                <td><?= $file['date'] ?></td>
+                                <td><?= $file['size'] ?></td>
+                                <td>
+                                    <?php if ($tinyUpload->canShare($file['token'], $file['file_name'])) { ?>
+                                        <form method="POST">
+                                            <input type="hidden" name="share" value="<?= base64_encode(json_encode($file)) ?>">
+                                            <button type="submit" class="btn btn-sm btn-primary">Share</button>
+                                        </form>
+                                    <?php } ?>
+                                    <?php if ($tinyUpload->canUnshare($file['token'], $file['file_name'])) { ?>
+                                        <form method="POST">
+                                            <input type="hidden" name="unsahre" value="<?= base64_encode(json_encode($file)) ?>">
+                                            <button type="submit" class="btn btn-sm btn-primary">UnShare</button>
+                                        </form>
+                                    <?php } ?>
+                                </td>
+                                <td>
+                                    <?php if ($tinyUpload->canDelete($file['is_share'], $file['token'], $file['file_name'])) { ?>
+                                        <form method="POST">
+                                            <input type="hidden" name="delete_file" value="<?= base64_encode(json_encode($file)) ?>">
+                                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                        </form>
+                                    <?php } ?>
+                                </td>
+                            </tr>
                             <?php } ?>
                         <?php } ?>
                         </tbody>

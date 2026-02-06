@@ -2,54 +2,52 @@
 
 class TinyUpload
 {
+    const SHARE = 'share';
+    const UNSHARE = 'unshare';
+
     protected string $basePath;
 
-    public function __construct(
-        protected string $adminToken,
-        protected string $publicToken
-    ) {
+    public function __construct(protected string $adminToken)
+    {
         session_start();
         //
-        set_time_limit(0);
-        ignore_user_abort(true);
+        $this->basePath = __DIR__;
+        $this->mkdir($this->path(true));
+        $this->mkdir($this->path(false, $adminToken));
+    }
+
+    protected function path(bool $isShare, ?string $token = null, ?string $fileName = null)
+    {
+        $parts = [$this->basePath, 'storage'];
         //
-        $this->basePath = __DIR__.DIRECTORY_SEPARATOR.'storage';
-        $this->mkdir($adminToken);
-        $this->mkdir($publicToken);
+        $parts[] = ($isShare ? static::SHARE : static::UNSHARE);
+        //
+        if($token !== null) {
+            $parts[] = $token;
+        }
+        if($fileName !== null) {
+            $parts[] = $fileName;
+        }
+        //
+        return implode(DIRECTORY_SEPARATOR, $parts);
     }
 
-    public function path(...$path)
+    protected function mkdir($rawPath)
     {
-        return implode(DIRECTORY_SEPARATOR, [$this->basePath, ...$path]);
-    }
-
-    public function mkdir(...$path)
-    {
-        $p = $this->path(...$path);
-
-        if (file_exists($p)) {
+        if (file_exists($rawPath)) {
             return 200;
         }
 
-        if (mkdir($p, recursive: true)) {
+        if (mkdir($rawPath, recursive: true)) {
             return 201;
         }
 
         return 500;
     }
 
-    public function signin($token)
+    public function signin(string $token)
     {
-        if ($this->isPublic($token)) {
-            return false;
-        }
-
-        if ($this->adminToken === $token) {
-            $_SESSION['token'] = $token;
-
-            return true;
-        }
-        if (is_dir($this->path($token))) {
+        if (is_dir($this->path(false, $token))) {
             $_SESSION['token'] = $token;
 
             return true;
@@ -68,60 +66,40 @@ class TinyUpload
         return $this->getToken() === $this->adminToken;
     }
 
-    public function isPublic($token): bool
-    {
-        return $token === $this->publicToken;
-    }
-
     public function getToken()
     {
-        if (empty($_SESSION['token'])) {
-            return null;
-        }
-
-        return $_SESSION['token'];
+        return empty($_SESSION['token']) ? null : $_SESSION['token'];
     }
 
-    public function signup($token)
+    public function signup(string $token)
     {
-        $this->mkdir($token);
+        $this->mkdir($this->path(false, $token));
     }
 
-    public function scandir($path)
+    public function scandir($rawPath)
     {
-        return array_diff(scandir($path), ['.', '..']);
+        return array_diff(scandir($rawPath), ['.', '..']);
     }
 
-    public function filesize($path)
+    public function filesize($rawPath)
     {
-        $b = filesize($path);
+        $bytes = filesize($rawPath);
+        $i = floor(log($bytes) / log(1024));
+        $sizes = array('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
 
-        $kb = $b / 1024;
-        if ($kb < 1) {
-            return number_format($b, 2).' b';
-        }
-
-        $mb = $kb / 1024;
-        if ($mb < 1) {
-            return number_format($kb, 2).' kb';
-        }
-
-        $gb = $mb / 1024;
-        if ($gb < 1) {
-            return number_format($mb, 2).' mb';
-        }
-
-        return number_format($b, 2) / 1024;
+        return sprintf('%.02F', $bytes / pow(1024, $i)) * 1 . ' ' . $sizes[$i];
     }
 
-    public function listFiles($token)
+    public function listFiles($isShare, $token)
     {
         $result = [];
         try {
-            $dirs = scandir($this->path($token));
-            foreach (array_diff($dirs, ['.', '..']) as $fileName) {
-                $path = $this->path($token, $fileName);
-                $result[$fileName] = [
+            $files = $this->scandir($this->path($isShare, $token));
+            foreach ($files as $fileName) {
+                $path = $this->path($isShare, $token, $fileName);
+                $result[] = [
+                    'is_share' => $isShare,
+                    'token' => $token,
                     'file_name' => $fileName,
                     'size' => $this->filesize($path),
                     'date' => date('Y-m-d H:i:s', filectime($path)),
@@ -136,11 +114,11 @@ class TinyUpload
 
     public function listTokens()
     {
-        $result = [$this->publicToken => $this->publicToken];
+        $result = [];
         if ($this->getToken()) {
             $result[$this->getToken()] = $this->getToken();
             if ($this->isAdmin()) {
-                foreach ($this->scandir($this->path()) as $token) {
+                foreach ($this->scandir($this->path(false)) as $token) {
                     $result[$token] = $token;
                 }
             }
@@ -151,9 +129,9 @@ class TinyUpload
 
     public function list()
     {
-        $result = [];
+        $result = [null => $this->listFiles(true, null)];
         foreach ($this->listTokens() as $token) {
-            $result[$token] = $this->listFiles($token);
+            $result[$token] = $this->listFiles(false, $token);
         }
 
         return $result;
@@ -163,36 +141,27 @@ class TinyUpload
     {
         $token = $this->getToken();
         if (empty($token)) {
-            return null;
-        }
-        if ($this->isPublic($token)) {
-            return null;
+            return 403;
         }
 
         try {
             $fileName = basename($tmpFile['name']);
-            $path = $this->path($token, $fileName);
-
+            $path = $this->differenceFileName(false, $token, $fileName);
             if (move_uploaded_file($tmpFile['tmp_name'], $path)) {
-                return $fileName;
+                return 200;
             }
         } catch (\Throwable $th) {
-            exit($th->getMessage());
         } catch (\Exception $th) {
-            exit($th->getMessage());
         }
 
-        return null;
+        return 500;
     }
 
     public function uploadUrl($url)
     {
         $token = $this->getToken();
         if (empty($token)) {
-            return null;
-        }
-        if ($this->isPublic($token)) {
-            return null;
+            return 403;
         }
 
         try {
@@ -210,18 +179,18 @@ class TinyUpload
             $response = curl_exec($curl);
             if ($response) {
                 $fileName = basename(parse_url($url, PHP_URL_PATH));
-                $path = $this->notExistsFileName($token, $fileName);
+                $path = $this->differenceFileName(false, $token, $fileName);
                 file_put_contents($path, $response);
-
-                return pathinfo($path);
+                return 200;
             }
         } catch (\Throwable $th) {
+        } catch (\Exception $th) {
         }
 
-        return null;
+        return 500;
     }
 
-    public function notExistsFileName($token, $fileName)
+    public function differenceFileName($isShare, $token, $fileName)
     {
         $info = pathinfo($fileName);
         $name = $info['filename'];
@@ -230,7 +199,7 @@ class TinyUpload
         $i = 1;
         do {
             $newName = $i === 1 ? ($name.$ext) : ($name." ($i)".$ext);
-            $path = $this->path($token, $newName);
+            $path = $this->path($isShare, $token, $newName);
             $i++;
         } while (file_exists($path));
 
@@ -239,7 +208,7 @@ class TinyUpload
 
     public function streamDownload($token, $fileName)
     {
-        $path = $this->path($token, $fileName);
+        $path = $this->path(false, $token, $fileName);
         ob_clean();
         ob_end_flush();
         header('Content-Type: application/octet-stream');
@@ -247,94 +216,58 @@ class TinyUpload
         readfile($path);
     }
 
-    public function deletePermission($token)
+    public function canDelete($isShare, $token, $fileName)
     {
-        if ($this->isAdmin()) {
-            return true;
-        }
-
-        if ($this->getToken() === $token) {
-            return true;
-        }
-
-        return false;
-    }
-
-    public function deleteExist($token, $fileName)
-    {
-        return in_array($fileName, $this->scandir($this->path($token)));
-    }
-
-    public function canDelete($token, $fileName)
-    {
-        if (! $this->deletePermission($token)) {
+        $isAllowed = ($this->isAdmin() || ($token && ($this->getToken() === $token)));
+        if (! $isAllowed) {
             return false;
         }
 
-        if (! $this->deleteExist($token, $fileName)) {
+        $isExists = in_array($fileName, $this->scandir($this->path($isShare, $token)));
+        if (! $isExists) {
             return false;
         }
 
         return true;
     }
 
-    public function delete($token, $fileName)
+    public function delete($isShare, $token, $fileName)
     {
-        if (! $this->canDelete($token, $fileName)) {
+        if (! $this->canDelete($isShare, $token, $fileName)) {
             return 403;
         }
 
-        if (unlink($this->path($token, $fileName))) {
+        if (unlink($this->path($isShare, $token, $fileName))) {
             return 200;
         }
 
         return 500;
     }
 
-    public function moveToPermission($token)
+    public function canShare($token, $fileName)
     {
-        if ($this->isPublic($token)) {
+        $isAllowed = ($this->isAdmin() || ($this->getToken() === $token));
+        if (! $isAllowed) {
             return false;
         }
 
-        if ($this->isAdmin()) {
-            return true;
-        }
-
-        if ($this->getToken() === $token) {
-            return true;
-        }
-
-        return false;
-    }
-
-    public function moveToExist($token, $fileName)
-    {
-        return in_array($fileName, $this->scandir($this->path($token)));
-    }
-
-    public function canMoveTo($token, $fileName)
-    {
-        if (! $this->moveToPermission($token)) {
-            return false;
-        }
-
-        if (! $this->moveToExist($token, $fileName)) {
+        $isExists = in_array($fileName, $this->scandir($this->path(false, $token)));
+        if (! $isExists) {
             return false;
         }
 
         return true;
     }
 
-    public function moveTo($token, $fileName)
+    public function share($token, $fileName)
     {
-        if (! $this->canMoveTo($token, $fileName)) {
+        if (! $this->canShare($token, $fileName)) {
             return 403;
         }
 
         if (rename(
-            $this->path($token,  $fileName),
-            $this->notExistsFileName($this->publicToken, $fileName)
+            $this->path(false,  $token, $fileName),
+            $this->differenceFileName(true, null, $fileName)
         )) {
             return 200;
         }
@@ -342,46 +275,30 @@ class TinyUpload
         return 500;
     }
 
-    public function moveFromPermission($token)
+    public function canUnshare($token, $fileName)
     {
-        if (! $this->isPublic($token)) {
+        $isAllowed = ($this->isAdmin());
+        if (! $isAllowed) {
             return false;
         }
 
-        if ($this->isAdmin()) {
-            return true;
-        }
-
-        return false;
-    }
-
-    public function moveFromExist($token, $fileName)
-    {
-        return in_array($fileName, $this->scandir($this->path($token)));
-    }
-
-    public function canMoveFrom($token, $fileName)
-    {
-        if (! $this->moveFromPermission($token)) {
-            return false;
-        }
-
-        if (! $this->moveFromExist($token, $fileName)) {
+        $isExists = in_array($fileName, $this->scandir($this->path(true)));
+        if (! $isExists) {
             return false;
         }
 
         return true;
     }
 
-    public function moveFrom($token, $fileName)
+    public function unshare($token, $fileName)
     {
-        if (! $this->canMoveFrom($token, $fileName)) {
+        if (! $this->canUnshare($token, $fileName)) {
             return 403;
         }
 
         if (rename(
-            $this->path($this->publicToken,  $fileName),
-            $this->notExistsFileName($this->getToken(), $fileName)
+            $this->path(true,  null, $fileName),
+            $this->differenceFileName(false, $this->getToken(), $fileName)
         )) {
             return 200;
         }
