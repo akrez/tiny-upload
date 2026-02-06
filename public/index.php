@@ -124,23 +124,17 @@ if (! empty($_FILES['file']['tmp_name'])) {
                     <table class="table table-bordered table-sm align-middle font-monospace">
                         <tbody>
                         <?php foreach ($tinyUpload->list() as $tokenName => $tokens) { ?>
-                             <tr class="table-secondary ">
-                                <td><?php if (empty($tokenName)) {
-                                    echo '🟢 Share';
-                                } elseif ($tokenName === $tinyUpload->getToken()) {
-                                    echo '🟡 Yours';
-                                } else {
-                                    echo '🟠 Others';
-                                } ?></td>
-                                <td colspan="99"><?= $tokenName ?></td>
+                             <tr class="table-secondary">
+                                <td class="fw-bold"><?= ($tokenName ? $tokenName : '&nbsp;') ?></td>
+                                <td colspan="99"></td>
                             </tr>
                         <?php foreach ($tokens as $file) { ?>
                             <tr>
                                 <td>
-                                    <a href="./?stream_download=<?= base64_encode(json_encode($file)) ?>"><?= $file['file_name'] ?></a>
+                                    <a class="text-decoration-none" href="./?stream_download=<?= base64_encode(json_encode($file)) ?>"><?= $file['file_name'] ?></a>
                                 </td>
-                                <td><?= $file['date'] ?></td>
                                 <td><?= $file['size'] ?></td>
+                                <td><?= $file['date'] ?></td>
                                 <td>
                                     <?php if ($tinyUpload->canShare($file['token'], $file['file_name'])) { ?>
                                         <form method="POST">
