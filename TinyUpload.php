@@ -22,8 +22,10 @@ class TinyUpload
         //
         $parts[] = ($isShare ? static::SHARE : static::UNSHARE);
         //
-        if($token !== null) {
-            $parts[] = $token;
+        if(! $isShare) {
+            if($token !== null) {
+                $parts[] = $token;
+            }
         }
         if($fileName !== null) {
             $parts[] = $fileName;
