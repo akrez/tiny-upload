@@ -26,6 +26,11 @@ if (! empty($_POST['delete_file'])) {
     $tinyUpload->deleteFile($info['is_share'], $info['token'], $info['file_name']);
     header('Refresh:0');
 }
+if (! empty($_POST['delete_dir'])) {
+    $info = json_decode(base64_decode($_POST['delete_dir']), true);
+    $tinyUpload->deleteDir($info['token']);
+    header('Refresh:0');
+}
 if (! empty($_POST['share'])) {
     $info = json_decode(base64_decode($_POST['share']), true);
     $tinyUpload->share($info['token'], $info['file_name']);
@@ -129,7 +134,14 @@ if (! empty($_FILES['file']['tmp_name'])) {
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td></td>
+                                <td>
+                                    <?php if ($tinyUpload->canDeleteDir($tokenName)) { ?>
+                                        <form method="POST">
+                                            <input type="hidden" name="delete_dir" value="<?= base64_encode(json_encode(['token' => $tokenName])) ?>">
+                                            <button type="submit" class="btn btn-sm btn-danger w-100">Delete</button>
+                                        </form>
+                                    <?php } ?>
+                                </td>
                             </tr>
                         <?php foreach ($tokens as $file) { ?>
                             <tr>

@@ -226,6 +226,38 @@ class TinyUpload
         readfile($path);
     }
 
+    public function canDeleteDir($token)
+    {
+        if (empty($token)) {
+            return false;
+        }
+
+        $isAllowed = ($this->isAdmin() || ($token && ($this->getToken() === $token)));
+        if (! $isAllowed) {
+            return false;
+        }
+
+        $isExists = in_array($token, $this->scandir($this->path(false)));
+        if (! $isExists) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function deleteDir($token)
+    {
+        if (! $this->canDeleteDir($token)) {
+            return 403;
+        }
+
+        if (@rmdir($this->path(false, $token))) {
+            return 200;
+        }
+
+        return 500;
+    }
+
     public function canDeleteFile($isShare, $token, $fileName)
     {
         $isAllowed = ($this->isAdmin() || ($token && ($this->getToken() === $token)));
