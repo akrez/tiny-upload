@@ -145,13 +145,13 @@ if (! empty($_FILES['file']['tmp_name'])) {
                                     <?php if ($tinyUpload->canShare($file['token'], $file['file_name'])) { ?>
                                         <form method="POST">
                                             <input type="hidden" name="share" value="<?= base64_encode(json_encode($file)) ?>">
-                                            <button type="submit" class="btn btn-sm btn-primary">Share</button>
+                                            <button type="submit" class="btn btn-sm btn-primary w-100">Share</button>
                                         </form>
                                     <?php } ?>
                                     <?php if ($tinyUpload->canUnshare($file['token'], $file['file_name'])) { ?>
                                         <form method="POST">
                                             <input type="hidden" name="unsahre" value="<?= base64_encode(json_encode($file)) ?>">
-                                            <button type="submit" class="btn btn-sm btn-primary">UnShare</button>
+                                            <button type="submit" class="btn btn-sm btn-primary w-100">UnShare</button>
                                         </form>
                                     <?php } ?>
                                 </td>
@@ -159,7 +159,7 @@ if (! empty($_FILES['file']['tmp_name'])) {
                                     <?php if ($tinyUpload->canDelete($file['is_share'], $file['token'], $file['file_name'])) { ?>
                                         <form method="POST">
                                             <input type="hidden" name="delete_file" value="<?= base64_encode(json_encode($file)) ?>">
-                                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                            <button type="submit" class="btn btn-sm btn-danger w-100">Delete</button>
                                         </form>
                                     <?php } ?>
                                 </td>
