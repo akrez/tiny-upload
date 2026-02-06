@@ -23,7 +23,7 @@ if (! empty($_POST['signup'])) {
 }
 if (! empty($_POST['delete_file'])) {
     $info = json_decode(base64_decode($_POST['delete_file']), true);
-    $tinyUpload->delete($info['is_share'], $info['token'], $info['file_name']);
+    $tinyUpload->deleteFile($info['is_share'], $info['token'], $info['file_name']);
     header('Refresh:0');
 }
 if (! empty($_POST['share'])) {
@@ -126,7 +126,10 @@ if (! empty($_FILES['file']['tmp_name'])) {
                         <?php foreach ($tinyUpload->list() as $tokenName => $tokens) { ?>
                              <tr class="table-secondary">
                                 <td class="fw-bold"><?= ($tokenName ? $tokenName : '&nbsp;') ?></td>
-                                <td colspan="99"></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
                             </tr>
                         <?php foreach ($tokens as $file) { ?>
                             <tr>
@@ -150,7 +153,7 @@ if (! empty($_FILES['file']['tmp_name'])) {
                                     <?php } ?>
                                 </td>
                                 <td>
-                                    <?php if ($tinyUpload->canDelete($file['is_share'], $file['token'], $file['file_name'])) { ?>
+                                    <?php if ($tinyUpload->canDeleteFile($file['is_share'], $file['token'], $file['file_name'])) { ?>
                                         <form method="POST">
                                             <input type="hidden" name="delete_file" value="<?= base64_encode(json_encode($file)) ?>">
                                             <button type="submit" class="btn btn-sm btn-danger w-100">Delete</button>

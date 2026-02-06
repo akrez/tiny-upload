@@ -226,7 +226,7 @@ class TinyUpload
         readfile($path);
     }
 
-    public function canDelete($isShare, $token, $fileName)
+    public function canDeleteFile($isShare, $token, $fileName)
     {
         $isAllowed = ($this->isAdmin() || ($token && ($this->getToken() === $token)));
         if (! $isAllowed) {
@@ -241,9 +241,9 @@ class TinyUpload
         return true;
     }
 
-    public function delete($isShare, $token, $fileName)
+    public function deleteFile($isShare, $token, $fileName)
     {
-        if (! $this->canDelete($isShare, $token, $fileName)) {
+        if (! $this->canDeleteFile($isShare, $token, $fileName)) {
             return 403;
         }
 
