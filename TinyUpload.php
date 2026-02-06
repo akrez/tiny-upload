@@ -38,7 +38,7 @@ class TinyUpload
         return 500;
     }
 
-    public function login($token)
+    public function signin($token)
     {
         if ($this->isPublic($token)) {
             return false;
@@ -58,7 +58,7 @@ class TinyUpload
         return false;
     }
 
-    public function logout()
+    public function signout()
     {
         session_destroy();
     }
@@ -82,7 +82,7 @@ class TinyUpload
         return $_SESSION['token'];
     }
 
-    public function createToken($token)
+    public function signup($token)
     {
         $this->mkdir($token);
     }

@@ -2,20 +2,20 @@
 include '../TinyUpload.php';
 
 $tinyUpload = new TinyUpload('asd', 'public');
-if (! empty($_POST['login'])) {
-    $tinyUpload->login($_POST['login']);
+if (! empty($_POST['signin'])) {
+    $tinyUpload->signin($_POST['signin']);
     header('Refresh:0');
 }
-if (! empty($_POST['logout'])) {
-    $tinyUpload->logout();
+if (! empty($_POST['signout'])) {
+    $tinyUpload->signout();
     header('Refresh:0');
 }
 if (! empty($_POST['url'])) {
     $tinyUpload->uploadUrl($_POST['url']);
     header('Refresh:0');
 }
-if (! empty($_POST['create_token'])) {
-    $tinyUpload->createToken($_POST['create_token']);
+if (! empty($_POST['signup'])) {
+    $tinyUpload->signup($_POST['signup']);
     header('Refresh:0');
 }
 if (! empty($_POST['delete_file'])) {
@@ -70,10 +70,10 @@ if (! empty($_FILES['file']['tmp_name'])) {
                             <span class="input-group-text">Token</span>
                             <?php if ($tinyUpload->getToken()) { ?>
                                 <input type="password" class="form-control" disabled="disabled">
-                                <button class="btn btn-danger" type="submit" name="logout" value="logout">Logout</button>
+                                <button class="btn btn-danger" type="submit" name="signout" value="signout">Signout</button>
                             <?php } else { ?>
-                                <input type="password" class="form-control" name="login">
-                                <button class="btn btn-primary" type="submit">Login</button>
+                                <input type="password" class="form-control" name="signin">
+                                <button class="btn btn-primary" type="submit">Signin</button>
                             <?php } ?>
                         </div>
                     </form>
@@ -110,7 +110,7 @@ if (! empty($_FILES['file']['tmp_name'])) {
                         <form method="POST">
                             <div class="input-group">
                                 <span class="input-group-text">Token</span>
-                                <input type="text" class="form-control" name="create_token">
+                                <input type="text" class="form-control" name="signup">
                                 <button class="btn btn-success" type="submit">Create</button>
                             </div>
                         </form>
@@ -157,8 +157,6 @@ if (! empty($_FILES['file']['tmp_name'])) {
                                                     <button type="submit" class="btn btn-sm btn-danger">Move To Public</button>
                                                 </form>
                                             <?php } ?>
-                                        </td>
-                                        <td class="font-monospace">
                                             <?php if ($tinyUpload->canMoveFrom($tokenName, $file['file_name'])) { ?>
                                                 <form method="POST">
                                                     <input type="hidden" name="move_from_public" value="<?= base64_encode(json_encode([
