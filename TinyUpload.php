@@ -19,11 +19,13 @@ class TinyUpload
 
     protected function path(bool $isShare, ?string $token = null, ?string $fileName = null)
     {
-        $parts = [$this->basePath, 'storage'];
+        $parts = [$this->basePath];
         //
-        $parts[] = ($isShare ? static::SHARE : static::UNSHARE);
-        //
-        if (! $isShare) {
+        if ($isShare) {
+            $parts[] = 'public';
+            $parts[] = static::SHARE;
+        } else {
+            $parts[] = static::UNSHARE;
             if ($token !== null) {
                 $parts[] = $token;
             }
@@ -48,8 +50,17 @@ class TinyUpload
         return 500;
     }
 
+    public function canSignin()
+    {
+        return ! boolval($this->getToken());
+    }
+
     public function signin(string $token)
     {
+        if (! $this->canSignin()) {
+            return 403;
+        }
+
         if (is_dir($this->path(false, $token))) {
             $_SESSION['token'] = $token;
 
@@ -59,8 +70,17 @@ class TinyUpload
         return false;
     }
 
+    public function canSignout()
+    {
+        return boolval($this->getToken());
+    }
+
     public function signout()
     {
+        if (! $this->canSignout()) {
+            return 403;
+        }
+
         session_destroy();
     }
 
@@ -74,8 +94,17 @@ class TinyUpload
         return empty($_SESSION['token']) ? null : $_SESSION['token'];
     }
 
+    public function canSignup()
+    {
+        return $this->isAdmin();
+    }
+
     public function signup(string $token)
     {
+        if (! $this->canSignup()) {
+            return 403;
+        }
+
         $this->mkdir($this->path(false, $token));
     }
 
@@ -140,12 +169,23 @@ class TinyUpload
         return $result;
     }
 
-    public function uploadFile($tmpFile)
+    public function canUpload()
     {
         $token = $this->getToken();
         if (empty($token)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function uploadFile($tmpFile)
+    {
+        if (! $this->canUpload()) {
             return 403;
         }
+
+        $token = $this->getToken();
 
         try {
             $fileName = $this->normalizeFilename($tmpFile['name']);
@@ -162,10 +202,11 @@ class TinyUpload
 
     public function uploadUrl($url)
     {
-        $token = $this->getToken();
-        if (empty($token)) {
+        if (! $this->canUpload()) {
             return 403;
         }
+
+        $token = $this->getToken();
 
         try {
             $curl = curl_init();
@@ -292,7 +333,7 @@ class TinyUpload
             return false;
         }
 
-        $isAllowed = ($this->isAdmin() || ($this->getToken() === $token));
+        $isAllowed = $this->isAdmin();
         if (! $isAllowed) {
             return false;
         }

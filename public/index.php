@@ -69,24 +69,35 @@ if (! empty($_FILES['file']['tmp_name'])) {
         </div>
         <div class="col-sm-10">
 
-            <div class="row mt-3">
-                <div class="col-12">
-                    <form method="POST">
-                        <div class="input-group">
-                            <span class="input-group-text">Token</span>
-                            <?php if ($tinyUpload->getToken()) { ?>
-                                <input type="password" class="form-control" disabled="disabled">
-                                <button class="btn btn-danger" type="submit" name="signout" value="signout">Signout</button>
-                            <?php } else { ?>
+            <?php if ($tinyUpload->canSignin()) { ?>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <form method="POST">
+                            <div class="input-group">
+                                <span class="input-group-text">Token</span>
                                 <input type="password" class="form-control" name="signin">
                                 <button class="btn btn-primary" type="submit">Signin</button>
-                            <?php } ?>
-                        </div>
-                    </form>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </div>
+            <?php } ?>
 
-            <?php if ($tinyUpload->getToken()) { ?>
+            <?php if ($tinyUpload->canSignout()) { ?>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <form method="POST">
+                            <div class="input-group">
+                                <span class="input-group-text">Token</span>
+                                <input type="password" class="form-control" disabled="disabled">
+                                <button class="btn btn-danger" type="submit" name="signout" value="signout">Signout</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            <?php } ?>
+                
+            <?php if ($tinyUpload->canUpload()) { ?>
                 <div class="row mt-3">
                     <div class="col-12">
                         <form method="POST">
@@ -110,7 +121,7 @@ if (! empty($_FILES['file']['tmp_name'])) {
                 </div>
             <?php } ?>
 
-            <?php if ($tinyUpload->isAdmin()) { ?>
+            <?php if ($tinyUpload->canSignup()) { ?>
                 <div class="row mt-3">
                     <div class="col-12">
                         <form method="POST">
