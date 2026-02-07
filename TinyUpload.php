@@ -22,7 +22,6 @@ class TinyUpload
         $parts = [$this->basePath];
         //
         if ($isShare) {
-            $parts[] = 'public';
             $parts[] = static::SHARE;
         } else {
             $parts[] = static::UNSHARE;
@@ -278,7 +277,12 @@ class TinyUpload
             return false;
         }
 
-        $isAllowed = ($this->isAdmin() || ($token && ($this->getToken() === $token)));
+        $isAllowed = $this->isAdmin();
+        if (! $isAllowed) {
+            return false;
+        }
+
+        $isAllowed = ($token && ($this->getToken() !== $token));
         if (! $isAllowed) {
             return false;
         }
