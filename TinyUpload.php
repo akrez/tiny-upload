@@ -105,6 +105,10 @@ class TinyUpload
             return 403;
         }
 
+        if ($token !== $this->normalizeFilename($token)) {
+            return 401;
+        }
+
         $this->mkdir($this->path(false, $token));
     }
 
