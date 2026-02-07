@@ -104,7 +104,7 @@ class TinyUpload
             return 403;
         }
 
-        if ($token !== $this->normalizeFilename($token)) {
+        if (! $this->normalizeFilename($token)) {
             return 401;
         }
 
@@ -226,7 +226,7 @@ class TinyUpload
             $response = curl_exec($curl);
             $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
             if ($response && ($httpCode >= 200) && ($httpCode < 300)) {
-                $fileName = $this->normalizeFilename($url);
+                $fileName = $this->normalizeFilename(basename($url));
                 $path = $this->differenceFileName(false, $token, $fileName);
                 file_put_contents($path, $response);
 
@@ -302,6 +302,42 @@ class TinyUpload
         }
 
         if (@rmdir($this->path(false, $token))) {
+            return 200;
+        }
+
+        return 500;
+    }
+
+    public function canRenameFile($isShare, $token, $fileName)
+    {
+        $isAllowed = ($this->isAdmin() || ($token && ($this->getToken() === $token)));
+        if (! $isAllowed) {
+            return false;
+        }
+
+        $isExists = in_array($fileName, $this->scandir($this->path($isShare, $token)));
+        if (! $isExists) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function renameFile($newName, $isShare, $token, $fileName)
+    {
+        if (! $this->canRenameFile($isShare, $token, $fileName)) {
+            return 403;
+        }
+
+        $newName = $this->normalizeFilename($newName);
+        if (! $newName) {
+            return 401;
+        }
+
+        if (rename(
+            $this->path($isShare, $token, $fileName),
+            $this->differenceFileName($isShare, $token, $newName)
+        )) {
             return 200;
         }
 
@@ -406,15 +442,32 @@ class TinyUpload
         return 500;
     }
 
-    private function normalizeFilename(string $filename)
+    private function normalizeFilename(string $filename, ?string $default = null)
     {
-        $filename = basename($filename);
-        $filename = preg_replace('/[<>:"\/\\\\|?*\x00-\x1F]/', '_', $filename);
-        $filename = rtrim($filename, '. ');
-        if ($filename === '' || $filename === '.' || $filename === '..') {
-            $filename = 'download';
+        $filename = trim($filename);
+
+        $newFileName = basename($filename);
+        $newFileName = trim($newFileName);
+        $newFileName = preg_replace('/[<>:"\/\\\\|?*\x00-\x1F]/', '_', $newFileName);
+        $newFileName = trim($newFileName, '. ');
+
+        if ($newFileName === '' || $newFileName === '.' || $newFileName === '..') {
+            return $default;
         }
 
-        return $filename;
+        if ($filename !== $newFileName) {
+            return $default;
+        }
+
+        if (! $newFileName) {
+            return $default;
+        }
+
+        $ext = pathinfo($newFileName, PATHINFO_EXTENSION);
+        if (strpos(strtolower($ext), 'php') !== false) {
+            return $default;
+        }
+
+        return $newFileName;
     }
 }

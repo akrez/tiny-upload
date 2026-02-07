@@ -17,6 +17,11 @@ if ($action) {
     if (! empty($action['signup'])) {
         $tinyUpload->signup($action['signup']);
     }
+    if (! empty($action['rename_file']['file'])) {
+        $name = (empty($action['rename_file']['name']) ? '' : $action['rename_file']['name']);
+        $info = json_decode(base64_decode($action['rename_file']['file']), true);
+        $tinyUpload->renameFile($name, $info['is_share'], $info['token'], $info['file_name']);
+    }
     if (! empty($action['delete_file'])) {
         $info = json_decode(base64_decode($action['delete_file']), true);
         $tinyUpload->deleteFile($info['is_share'], $info['token'], $info['file_name']);
@@ -136,11 +141,13 @@ if (! empty($_GET['stream_download'])) {
 
             <div class="row mt-3">
                 <div class="col-12">
+                    <div class="Table responsive Class">
                     <table class="table table-bordered table-sm align-middle font-monospace">
                         <tbody>
                         <?php foreach ($tinyUpload->list() as $tokenName => $tokens) { ?>
                              <tr class="table-secondary">
                                 <td class="fw-bold"><?= ($tokenName ? $tokenName : '&nbsp;') ?></td>
+                                <td></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -160,6 +167,17 @@ if (! empty($_GET['stream_download'])) {
                                 </td>
                                 <td><?= $file['size'] ?></td>
                                 <td><?= $file['date'] ?></td>
+                                <td>
+                                    <?php if ($tinyUpload->canRenameFile($file['is_share'], $file['token'], $file['file_name'])) { ?>
+                                        <form method="POST">
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" class="form-control" name="action[rename_file][name]">
+                                                <input type="hidden" name="action[rename_file][file]" value="<?= base64_encode(json_encode($file)) ?>">
+                                                <button class="btn btn-primary" type="submit">Rename</button>
+                                            </div>
+                                        </form>
+                                    <?php } ?>
+                                </td>
                                 <td>
                                     <?php if ($tinyUpload->canShare($file['token'], $file['file_name'])) { ?>
                                         <form method="POST">
@@ -187,6 +205,7 @@ if (! empty($_GET['stream_download'])) {
                         <?php } ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
 
