@@ -225,7 +225,8 @@ class TinyUpload
                 CURLOPT_CUSTOMREQUEST => 'GET',
             ]);
             $response = curl_exec($curl);
-            if ($response) {
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            if ($response && ($httpCode >= 200) && ($httpCode < 300)) {
                 $fileName = $this->normalizeFilename($url);
                 $path = $this->differenceFileName(false, $token, $fileName);
                 file_put_contents($path, $response);
